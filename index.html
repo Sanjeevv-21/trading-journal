@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trading Journal</title>
+<script>
+  // Apply the saved theme before first paint to avoid a light-mode flash.
+  (function () {
+    try {
+      var saved = localStorage.getItem('tradingJournalTheme');
+      if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<a href="#mainContent" class="skip-link">Skip to content</a>
+
+<!-- Sidebar navigation -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <span class="sidebar-brand">Trading<span class="sidebar-brand-accent">Journal</span></span>
+    <div class="sidebar-top-btns">
+      <button class="sidebar-icon-btn theme-toggle-btn" id="themeToggleBtn" aria-label="Switch to dark mode" title="Switch to dark mode">
+        <span class="icon-moon" aria-hidden="true">🌙</span><span class="icon-sun" aria-hidden="true">☀️</span>
+      </button>
+      <button class="sidebar-icon-btn" id="sidebarCollapseBtn" aria-label="Minimize sidebar" title="Minimize sidebar">«</button>
+      <button class="sidebar-icon-btn" id="sidebarCloseBtn" aria-label="Hide sidebar" title="Hide sidebar">✕</button>
+    </div>
+  </div>
+
+  <button class="btn btn-primary sidebar-add-btn" id="sidebarAddTradeBtn">
+    <span class="sidebar-link-label">+ Add Trade</span>
+    <span class="sidebar-mini-label" aria-hidden="true">+</span>
+  </button>
+
+  <nav class="sidebar-nav" aria-label="Page sections">
+    <a href="#dashboardSection" class="sidebar-link" data-target="dashboardSection" title="Dashboard"><span class="sidebar-link-icon icon-violet" aria-hidden="true">📊</span><span class="sidebar-link-label">Dashboard</span></a>
+    <a href="#calendarSection" class="sidebar-link" data-target="calendarSection" title="Monthly Calendar"><span class="sidebar-link-icon icon-yellow" aria-hidden="true">🗓️</span><span class="sidebar-link-label">Monthly Calendar</span></a>
+    <a href="#performanceSection" class="sidebar-link" data-target="performanceSection" title="Performance"><span class="sidebar-link-icon icon-green" aria-hidden="true">🥧</span><span class="sidebar-link-label">Performance</span></a>
+    <a href="#equitySection" class="sidebar-link" data-target="equitySection" title="Equity Curve"><span class="sidebar-link-icon icon-blue" aria-hidden="true">📈</span><span class="sidebar-link-label">Equity Curve</span></a>
+    <a href="#tradeLogSection" class="sidebar-link" data-target="tradeLogSection" title="Trade Log"><span class="sidebar-link-icon icon-red" aria-hidden="true">📒</span><span class="sidebar-link-label">Trade Log</span></a>
+  </nav>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-nav">
+    <button type="button" class="sidebar-link sidebar-action" id="sidebarImportBtn" title="Import trades from a JSON file"><span class="sidebar-link-icon icon-blue" aria-hidden="true">⬆️</span><span class="sidebar-link-label">Import Trades</span></button>
+    <button type="button" class="sidebar-link sidebar-action" id="sidebarExportBtn" title="Export all trades as a JSON file"><span class="sidebar-link-icon icon-green" aria-hidden="true">⬇️</span><span class="sidebar-link-label">Export Trades</span></button>
+    <button type="button" class="sidebar-link sidebar-action" id="sidebarRestoreBtn" title="Restore a full backup — replaces all current trades"><span class="sidebar-link-icon icon-red" aria-hidden="true">♻️</span><span class="sidebar-link-label">Restore Backup</span></button>
+    <button type="button" class="sidebar-link sidebar-action" id="sidebarSampleDataBtn" title="Load Sample Data"><span class="sidebar-link-icon icon-yellow" aria-hidden="true">🎲</span><span class="sidebar-link-label">Load Sample Data</span></button>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <p class="sidebar-shortcuts">
+    <kbd>N</kbd> new trade &nbsp; <kbd>/</kbd> search
+  </p>
+
+  <p class="sidebar-footer">Local &amp; private — your data never leaves this browser.</p>
+</aside>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false" aria-controls="sidebar">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand">
+        <h1><span class="brand-black">Trading</span> <span class="brand-accent">Journal</span></h1>
+        <p class="brand-sub">Tap Add Trade to log a position — see your edge take shape.</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost topbar-secondary-action" id="sampleDataBtn"><span aria-hidden="true">🎲</span> Sample Data</button>
+      <button type="button" class="btn btn-ghost topbar-secondary-action" id="importBtn" title="Import trades from a JSON file">Import Trades</button>
+      <input type="file" id="importFile" accept="application/json" hidden />
+      <button type="button" class="btn btn-ghost topbar-secondary-action" id="exportBtn" title="Export all trades as a JSON file">Export Trades</button>
+      <button type="button" class="btn btn-ghost topbar-secondary-action" id="restoreBtn" title="Restore a full backup — replaces all current trades">Restore Backup</button>
+      <input type="file" id="restoreFile" accept="application/json" hidden />
+      <button class="btn btn-primary" id="addTradeBtn" title="Add a new trade (shortcut: N)">+ Add Trade</button>
+    </div>
+  </header>
+
+  <main class="content" id="mainContent">
+
+    <!-- Stats -->
+    <section class="dashboard-section" id="dashboardSection">
+      <div class="section-heading">
+        <h2>Dashboard</h2>
+        <span class="muted">Your trading performance at a glance</span>
+      </div>
+
+      <div class="stats-layout">
+        <div class="stat-hero" id="statHero">
+          <span class="stat-hero-label">Total P&amp;L</span>
+          <span class="stat-hero-value-row">
+            <span class="stat-hero-value" id="statTotalPnl">$0.00</span>
+            <span class="stat-hero-pct" id="statTotalPnlPct"></span>
+          </span>
+          <span class="stat-hero-sub" id="statTotalPnlSub">Add your first trade to get started</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Win Rate</span>
+            <span class="stat-value" id="statWinRate">0%</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Trades</span>
+            <span class="stat-value" id="statTotalTrades">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Profit Factor</span>
+            <span class="stat-value" id="statProfitFactor">0.00</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Avg Win</span>
+            <span class="stat-value accent-green-text" id="statAvgWin">$0.00</span>
+            <span class="stat-value-pct" id="statAvgWinPct"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Avg Loss</span>
+            <span class="stat-value accent-red-text" id="statAvgLoss">$0.00</span>
+            <span class="stat-value-pct" id="statAvgLossPct"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Best Trade</span>
+            <span class="stat-value accent-green-text" id="statBestTrade">$0.00</span>
+            <span class="stat-value-pct" id="statBestTradePct"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Worst Trade</span>
+            <span class="stat-value accent-red-text" id="statWorstTrade">$0.00</span>
+            <span class="stat-value-pct" id="statWorstTradePct"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Current Streak</span>
+            <span class="stat-value" id="statCurrentStreak">—</span>
+            <span class="stat-value-pct" id="statStreakSub"></span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Max Drawdown</span>
+            <span class="stat-value accent-red-text" id="statMaxDrawdown">$0.00</span>
+            <span class="stat-value-pct" id="statMaxDrawdownPct"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Monthly Calendar -->
+    <section class="card calendar-card" id="calendarSection">
+      <div class="card-header calendar-header">
+        <div>
+          <h2>Monthly Calendar</h2>
+          <span class="muted">Daily P&amp;L at a glance</span>
+        </div>
+        <div class="month-nav">
+          <button class="month-nav-btn" id="prevMonthBtn" aria-label="Previous month">‹</button>
+          <span class="month-label" id="monthLabel">September 2026</span>
+          <button class="month-nav-btn" id="nextMonthBtn" aria-label="Next month">›</button>
+        </div>
+      </div>
+
+      <div class="calendar-body">
+        <div class="calendar-ring">
+          <svg viewBox="0 0 100 100" class="ring-svg" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" class="ring-bg"></circle>
+            <circle cx="50" cy="50" r="42" class="ring-fg" id="ringProgress"></circle>
+          </svg>
+          <div class="ring-label">
+            <span id="ringValue">0%</span>
+            <span class="ring-sub">win days</span>
+          </div>
+        </div>
+
+        <div class="calendar-grid-wrap">
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-legend">
+            <span><i class="dot dot-green" aria-hidden="true"></i> profit day</span>
+            <span><i class="dot dot-red" aria-hidden="true"></i> loss day</span>
+            <span><i class="dot dot-empty" aria-hidden="true"></i> no trades</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="month-stats-grid">
+        <div class="month-stat">
+          <span class="month-stat-value" id="monthPnl">$0.00</span>
+          <span class="month-stat-label">Month P&amp;L</span>
+        </div>
+        <div class="month-stat">
+          <span class="month-stat-value" id="monthTrades">0</span>
+          <span class="month-stat-label">Trades</span>
+        </div>
+        <div class="month-stat">
+          <span class="month-stat-value" id="monthWinRate">0%</span>
+          <span class="month-stat-label">Win Rate</span>
+        </div>
+        <div class="month-stat">
+          <span class="month-stat-value" id="monthBestDay">$0.00</span>
+          <span class="month-stat-label">Best Day</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Performance Breakdown -->
+    <section class="breakdown-grid" id="performanceSection">
+      <div class="card donut-card">
+        <div class="card-header">
+          <h2>Win / Loss Split</h2>
+          <span class="muted">All-time trade outcomes</span>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut" id="donutChart" role="img" aria-label="Win and loss split donut chart"><div class="donut-hole"><span id="donutCenterValue">0</span><span class="donut-center-label">trades</span></div></div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+      <div class="card bar-card">
+        <div class="card-header">
+          <h2>P&amp;L by Symbol</h2>
+          <span class="muted">Where your edge lives</span>
+        </div>
+        <div class="bar-chart" id="symbolBarChart"></div>
+        <div class="empty-state" id="barChartEmpty">Add trades to see your best and worst symbols.</div>
+      </div>
+    </section>
+
+    <!-- Equity Curve -->
+    <section class="card chart-card" id="equitySection">
+      <div class="card-header">
+        <h2>Equity Curve</h2>
+        <span class="muted" id="chartSubtitle">Cumulative P&amp;L over trades</span>
+      </div>
+      <div class="chart-wrap">
+        <svg id="equityChart" viewBox="0 0 800 260" preserveAspectRatio="none" role="img" aria-label="Equity curve chart"></svg>
+        <div class="empty-state" id="chartEmpty">
+          No trades yet — add your first trade to see your equity curve.
+          <div class="empty-state-action"><button type="button" class="btn btn-primary" id="chartEmptyAddBtn">+ Add Trade</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trade Log -->
+    <section class="card table-card" id="tradeLogSection">
+      <div class="card-header">
+        <h2>Trade Log</h2>
+        <div class="filters">
+          <label class="visually-hidden" for="filterSymbol">Filter by symbol</label>
+          <input type="text" id="filterSymbol" placeholder="Filter by symbol… ( / )" />
+          <label class="visually-hidden" for="filterOutcome">Filter by outcome</label>
+          <select id="filterOutcome">
+            <option value="all">All trades</option>
+            <option value="win">Wins</option>
+            <option value="loss">Losses</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="tradeTable">
+          <thead>
+            <tr>
+              <th scope="col" aria-sort="descending"><button type="button" class="th-sort" data-sort="date">Date<span class="sort-icon" aria-hidden="true"></span></button></th>
+              <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="symbol">Symbol<span class="sort-icon" aria-hidden="true"></span></button></th>
+              <th scope="col">Side</th>
+              <th scope="col">Entry</th>
+              <th scope="col">Exit</th>
+              <th scope="col">Size</th>
+              <th scope="col">Fees</th>
+              <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="pnl">P&amp;L<span class="sort-icon" aria-hidden="true"></span></button></th>
+              <th scope="col">Notes</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="tradeTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="tableEmpty">
+          No trades logged yet.
+          <div class="empty-state-action"><button type="button" class="btn btn-primary" id="tableEmptyAddBtn">+ Add Trade</button></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Add/Edit Trade Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <h2 id="modalTitle">Add Trade</h2>
+      <button class="icon-btn" id="closeModalBtn" aria-label="Close dialog">✕</button>
+    </div>
+    <form id="tradeForm" class="modal-form" novalidate>
+      <input type="hidden" id="tradeId" />
+
+      <div class="form-row">
+        <label for="fDate">Date</label>
+        <input type="date" id="fDate" required />
+      </div>
+
+      <div class="form-row" id="fSymbolRow">
+        <label for="fSymbol">Symbol</label>
+        <input type="text" id="fSymbol" placeholder="e.g. AAPL, BTCUSD" required aria-describedby="fSymbolError" />
+        <span class="field-error" id="fSymbolError" role="alert"></span>
+      </div>
+
+      <div class="form-row">
+        <span id="fDirectionLabel">Direction</span>
+        <div class="segmented" id="fDirection" role="group" aria-labelledby="fDirectionLabel">
+          <button type="button" class="seg-btn active" data-value="long" aria-pressed="true">Long</button>
+          <button type="button" class="seg-btn" data-value="short" aria-pressed="false">Short</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row" id="fEntryRow">
+          <label for="fEntry">Entry Price</label>
+          <input type="number" step="any" id="fEntry" required aria-describedby="fEntryError" />
+          <span class="field-error" id="fEntryError" role="alert"></span>
+        </div>
+        <div class="form-row" id="fExitRow">
+          <label for="fExit">Exit Price</label>
+          <input type="number" step="any" id="fExit" required aria-describedby="fExitError" />
+          <span class="field-error" id="fExitError" role="alert"></span>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row" id="fSizeRow">
+          <label for="fSize">Size / Qty</label>
+          <input type="number" step="any" id="fSize" value="1" required min="0" aria-describedby="fSizeError" />
+          <span class="field-error" id="fSizeError" role="alert"></span>
+        </div>
+        <div class="form-row" id="fFeesRow">
+          <label for="fFees">Fees</label>
+          <input type="number" step="any" id="fFees" value="0" min="0" aria-describedby="fFeesError" />
+          <span class="field-error" id="fFeesError" role="alert"></span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="fNotes">Notes</label>
+        <textarea id="fNotes" rows="2" placeholder="Setup, mistakes, lessons…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <span id="fScreenshotsLabel">Chart Screenshots <span class="screenshot-optional">(optional)</span></span>
+        <div class="screenshot-grid" role="group" aria-labelledby="fScreenshotsLabel">
+          <div class="screenshot-field">
+            <span class="screenshot-field-caption">Before</span>
+            <input type="file" accept="image/*" id="fBeforeImageInput" class="visually-hidden screenshot-file-input" aria-label="Add a before screenshot for this trade" />
+            <label class="screenshot-drop" for="fBeforeImageInput" id="fBeforeImageDrop">
+              <img class="screenshot-thumb" id="fBeforeImageThumb" alt="Before screenshot preview" hidden />
+              <span class="screenshot-placeholder" id="fBeforeImagePlaceholder">📷<br />Add screenshot</span>
+            </label>
+            <button type="button" class="screenshot-remove" id="fBeforeImageRemove" aria-label="Remove before screenshot" hidden>✕</button>
+          </div>
+          <div class="screenshot-field">
+            <span class="screenshot-field-caption">After</span>
+            <input type="file" accept="image/*" id="fAfterImageInput" class="visually-hidden screenshot-file-input" aria-label="Add an after screenshot for this trade" />
+            <label class="screenshot-drop" for="fAfterImageInput" id="fAfterImageDrop">
+              <img class="screenshot-thumb" id="fAfterImageThumb" alt="After screenshot preview" hidden />
+              <span class="screenshot-placeholder" id="fAfterImagePlaceholder">📷<br />Add screenshot</span>
+            </label>
+            <button type="button" class="screenshot-remove" id="fAfterImageRemove" aria-label="Remove after screenshot" hidden>✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pnl-preview">
+        <span>Estimated P&amp;L</span>
+        <span class="pnl-preview-value">
+          <span id="pnlPreview">$0.00</span>
+          <span id="pnlPreviewPct" class="pnl-preview-pct">0.00%</span>
+        </span>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Trade</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-backdrop" id="confirmBackdrop">
+  <div class="modal modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="modal-header">
+      <h2 id="confirmTitle">Delete trade?</h2>
+      <button class="icon-btn" id="confirmCloseBtn" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="modal-confirm-body">
+      <p id="confirmMessage">This will permanently remove the trade from your journal. This cannot be undone.</p>
+    </div>
+    <div class="modal-actions modal-confirm-actions">
+      <button type="button" class="btn btn-ghost" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- Screenshot viewer modal -->
+<div class="modal-backdrop" id="viewerBackdrop">
+  <div class="modal modal-screenshots" role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
+    <div class="modal-header">
+      <h2 id="viewerTitle">Trade Screenshots</h2>
+      <button class="icon-btn" id="viewerCloseBtn" aria-label="Close dialog">✕</button>
+    </div>
+    <div class="viewer-body">
+      <div class="viewer-pane">
+        <span class="viewer-pane-label">Before</span>
+        <div class="viewer-image-wrap">
+          <img class="viewer-image" id="viewerBeforeImage" alt="Before screenshot" hidden />
+          <span class="viewer-empty" id="viewerBeforeEmpty">No before screenshot</span>
+        </div>
+      </div>
+      <div class="viewer-pane">
+        <span class="viewer-pane-label">After</span>
+        <div class="viewer-image-wrap">
+          <img class="viewer-image" id="viewerAfterImage" alt="After screenshot" hidden />
+          <span class="viewer-empty" id="viewerAfterEmpty">No after screenshot</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
