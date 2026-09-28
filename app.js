@@ -879,7 +879,7 @@ tradeForm.addEventListener('submit', e => {
 // roughly 80-200KB instead of several MB, so a journal with screenshots
 // on most trades still fits comfortably under the ~5-10MB quota most
 // browsers allow per site (see the save-failure handling above and in
-// deleteTrade/loadSampleData/import for what happens if it doesn't).
+// deleteTrade/import for what happens if it doesn't).
 let currentBeforeImage = null;
 let currentAfterImage = null;
 
@@ -1073,79 +1073,6 @@ confirmDeleteBtn.addEventListener('click', () => {
 confirmCancelBtn.addEventListener('click', closeConfirmDelete);
 confirmCloseBtn.addEventListener('click', closeConfirmDelete);
 confirmBackdrop.addEventListener('click', e => { if (e.target === confirmBackdrop) closeConfirmDelete(); });
-
-// ---------- Sample data ----------
-function buildSampleTrades() {
-  const curY = today.getFullYear();
-  const curM = today.getMonth();
-  let prevY = curY;
-  let prevM = curM - 1;
-  if (prevM < 0) { prevM = 11; prevY -= 1; }
-
-  const clampToday = d => Math.min(d, today.getDate());
-  const iso = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
-
-  const specs = [
-    // Previous month
-    { d: iso(prevY, prevM, 4), symbol: 'AAPL', direction: 'long', entry: 190, exit: 196, size: 15, fees: 1, notes: 'Breakout above resistance, held into close.' },
-    { d: iso(prevY, prevM, 5), symbol: 'TSLA', direction: 'short', entry: 245, exit: 252, size: 8, fees: 1, notes: 'Faded the pop too early.' },
-    { d: iso(prevY, prevM, 6), symbol: 'NVDA', direction: 'long', entry: 118, exit: 124.5, size: 20, fees: 2, notes: 'Earnings momentum continuation.' },
-    { d: iso(prevY, prevM, 8), symbol: 'SPY', direction: 'long', entry: 560, exit: 557, size: 10, fees: 1, notes: 'Chopped around VWAP, stopped out.' },
-    { d: iso(prevY, prevM, 11), symbol: 'BTCUSD', direction: 'long', entry: 64000, exit: 65200, size: 0.05, fees: 3, notes: 'Weekend range breakout.' },
-    { d: iso(prevY, prevM, 12), symbol: 'MSFT', direction: 'short', entry: 430, exit: 424, size: 12, fees: 1, notes: 'Rejected at prior high.' },
-    { d: iso(prevY, prevM, 13), symbol: 'AMZN', direction: 'long', entry: 182, exit: 179, size: 15, fees: 1, notes: 'Entered too early, no confirmation.' },
-    { d: iso(prevY, prevM, 15), symbol: 'GOOGL', direction: 'long', entry: 168, exit: 173.5, size: 18, fees: 2, notes: 'Clean trend day, trailed stop.' },
-    { d: iso(prevY, prevM, 19), symbol: 'ETHUSD', direction: 'short', entry: 3400, exit: 3520, size: 0.8, fees: 2, notes: 'Squeeze against the short, cut late.' },
-    { d: iso(prevY, prevM, 21), symbol: 'QQQ', direction: 'long', entry: 478, exit: 483, size: 14, fees: 1, notes: 'Gap and go continuation.' },
-    { d: iso(prevY, prevM, 26), symbol: 'TSLA', direction: 'long', entry: 250, exit: 246, size: 10, fees: 1, notes: 'Reversed on weak volume, exited plan.' },
-    { d: iso(prevY, prevM, 28), symbol: 'AAPL', direction: 'short', entry: 198, exit: 194, size: 12, fees: 1, notes: 'Faded overextension into resistance.' },
-    // Current month
-    { d: iso(curY, curM, clampToday(2)), symbol: 'NVDA', direction: 'long', entry: 121, exit: 126, size: 18, fees: 2, notes: 'Held through pullback, worked.' },
-    { d: iso(curY, curM, clampToday(3)), symbol: 'SPY', direction: 'short', entry: 565, exit: 569, size: 10, fees: 1, notes: 'Wrong side of trend, cut quick.' },
-    { d: iso(curY, curM, clampToday(4)), symbol: 'AAPL', direction: 'long', entry: 192, exit: 197.5, size: 16, fees: 1, notes: 'Strong reclaim of VWAP.' },
-    { d: iso(curY, curM, clampToday(8)), symbol: 'BTCUSD', direction: 'short', entry: 66500, exit: 65200, size: 0.04, fees: 3, notes: 'Rejection at round number.' },
-    { d: iso(curY, curM, clampToday(9)), symbol: 'MSFT', direction: 'long', entry: 432, exit: 428, size: 12, fees: 1, notes: 'No follow-through, stopped out.' },
-    { d: iso(curY, curM, clampToday(10)), symbol: 'TSLA', direction: 'short', entry: 255, exit: 248, size: 8, fees: 1, notes: 'Clean break of support.' },
-    { d: iso(curY, curM, clampToday(11)), symbol: 'GOOGL', direction: 'long', entry: 171, exit: 175, size: 18, fees: 2, notes: 'Trend day, added on pullback.' },
-    { d: iso(curY, curM, clampToday(14)), symbol: 'QQQ', direction: 'long', entry: 482, exit: 479, size: 14, fees: 1, notes: 'Chased the open, gave it back.' },
-    { d: iso(curY, curM, clampToday(15)), symbol: 'ETHUSD', direction: 'long', entry: 3450, exit: 3610, size: 0.7, fees: 2, notes: 'Breakout with volume confirmation.' },
-    { d: iso(curY, curM, clampToday(16)), symbol: 'AMZN', direction: 'short', entry: 185, exit: 188, size: 15, fees: 1, notes: 'Squeeze higher, cut the loss.' },
-    { d: iso(curY, curM, clampToday(17)), symbol: 'NVDA', direction: 'long', entry: 125, exit: 131, size: 20, fees: 2, notes: 'Best trade of the week, let it run.' },
-    { d: iso(curY, curM, clampToday(18)), symbol: 'AAPL', direction: 'long', entry: 196, exit: 193, size: 14, fees: 1, notes: 'Late entry, chopped out.' },
-  ];
-
-  return specs.map((s, i) => ({
-    id: `demo-${i}`,
-    date: s.d,
-    symbol: s.symbol,
-    direction: s.direction,
-    entry: s.entry,
-    exit: s.exit,
-    size: s.size,
-    fees: s.fees,
-    notes: s.notes,
-    pnl: computePnl(s.direction, s.entry, s.exit, s.size, s.fees),
-  }));
-}
-
-function loadSampleData() {
-  const previous = trades;
-  trades = trades.filter(t => !String(t.id).startsWith('demo-'));
-  trades.push(...buildSampleTrades());
-  if (!saveTrades()) {
-    trades = previous;
-    showToast('Could not load sample data — local storage error.', 'error');
-    return;
-  }
-  renderAll();
-  showToast('Sample trades loaded.', 'success');
-}
-
-document.getElementById('sampleDataBtn').addEventListener('click', loadSampleData);
-document.getElementById('sidebarSampleDataBtn').addEventListener('click', () => {
-  closeSidebar();
-  loadSampleData();
-});
 
 // ---------- Filters ----------
 document.getElementById('filterSymbol').addEventListener('input', renderTable);
